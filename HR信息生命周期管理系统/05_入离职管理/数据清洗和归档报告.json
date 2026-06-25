@@ -1,0 +1,29 @@
+{
+  "reportTime": "2026-02-28T03:36:21.645Z",
+  "summary": {
+    "originalActiveEmployees": 472,
+    "originalResignedEmployees": 977,
+    "cleanedActiveEmployees": 472,
+    "cleanedResignedEmployees": 977,
+    "archivedResignedEmployees": 977
+  },
+  "dataQuality": {
+    "activeEmployees": {
+      "validRecords": 0,
+      "invalidRecords": 472
+    },
+    "resignedEmployees": {
+      "validRecords": 0,
+      "invalidRecords": 977
+    }
+  },
+  "archiveInfo": {
+    "archiveFile": "C:\\ShareHub\\HR系统恢复验证\\HR信息生命周期管理系统\\05_入离职管理\\03_离职办理阶段\\非敏感信息\\离职员工归档_2026-02-28T03-36-21.json",
+    "archiveIndex": "C:\\ShareHub\\HR系统恢复验证\\HR信息生命周期管理系统\\05_入离职管理\\03_离职办理阶段\\非敏感信息\\归档索引.json",
+    "archiveTimestamp": "2026-02-28T03-36-21"
+  },
+  "outputFiles": {
+    "activeEmployees": "C:\\ShareHub\\HR系统恢复验证\\HR信息生命周期管理系统\\05_入离职管理\\02_在职期间管理\\非敏感信息\\在职员工信息_清洗后.json",
+    "archiveIndex": "C:\\ShareHub\\HR系统恢复验证\\HR信息生命周期管理系统\\05_入离职管理\\03_离职办理阶段\\非敏感信息\\归档索引.json"
+  }
+}

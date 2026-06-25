@@ -1,0 +1,15 @@
+{
+  "name": "hros",
+  "private": true,
+  "workspaces": [
+    "apps/backend",
+    "apps/frontend"
+  ],
+  "scripts": {
+    "dev:db": "node -e \"console.log('sqlite mode: no db container needed')\"",
+    "dev:backend": "npm -w apps/backend run dev",
+    "dev:frontend": "npm -w apps/frontend run dev",
+    "dev": "npm run dev:db && npm run dev:backend",
+    "test:backend": "npm -w apps/backend test"
+  }
+}

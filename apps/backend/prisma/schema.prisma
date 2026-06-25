@@ -1,0 +1,417 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleCode {
+  ADMIN
+  HRBP
+  HR_SPECIALIST
+  MANAGER
+  EMPLOYEE_SELF
+  PAYROLL_FINANCE
+  AI_SERVICE_ACTOR
+}
+
+enum DataScope {
+  ALL
+  ORG_TREE
+  DEPT_TREE
+  SELF
+}
+
+enum EmployeeCurrentStatus {
+  PREBOARDING
+  ACTIVE
+  OFFBOARDED
+  ARCHIVED
+}
+
+enum WorkflowStatus {
+  DRAFT
+  SUBMITTED
+  HR_REVIEW
+  MANAGER_CONFIRM
+  FINANCE_CONFIRM
+  COMPLETED
+  ARCHIVED
+  CANCELLED
+}
+
+enum WorkflowDomainType {
+  ONBOARDING
+  OFFBOARDING
+  EMPLOYEE
+  WORKFLOW
+  AUDIT
+  SYSTEM
+}
+
+enum ActionInvocationStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SecurityEventType {
+  FORBIDDEN_ACCESS_ATTEMPT
+  READ_SENSITIVE_DATA
+  EXPORT_SENSITIVE_DATA
+  APPROVAL_BYPASS_ATTEMPT
+  HIGH_RISK_COMMAND_BLOCKED
+  SUSPICIOUS_REPEATED_RETRY
+}
+
+enum SecurityResolutionStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  FALSE_POSITIVE
+}
+
+enum CompensationStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  role         RoleCode
+  dataScope    DataScope
+  employeeId   String?  @unique
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  employee EmployeeMaster? @relation(fields: [employeeId], references: [id])
+}
+
+model OrgUnit {
+  id            String   @id @default(uuid())
+  orgCode       String   @unique
+  orgName       String
+  parentOrgId   String?
+  effectiveFrom DateTime @default(now())
+  effectiveTo   DateTime?
+
+  parent   OrgUnit?  @relation("OrgTree", fields: [parentOrgId], references: [id])
+  children OrgUnit[] @relation("OrgTree")
+  assignments JobAssignment[]
+}
+
+model Position {
+  id            String   @id @default(uuid())
+  positionCode  String   @unique
+  positionName  String
+  effectiveFrom DateTime @default(now())
+  effectiveTo   DateTime?
+
+  assignments JobAssignment[]
+}
+
+model EmployeeMaster {
+  id            String                @id @default(uuid())
+  employeeNo    String                @unique
+  fullName      String
+  workEmail     String?               @unique
+  mobilePhone   String?
+  hireDate      DateTime?
+  currentStatus EmployeeCurrentStatus
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  identityPrivate     EmployeeIdentityPrivate?
+  employmentRelations EmploymentRelationship[]
+  jobAssignments      JobAssignment[]         @relation("EmployeeAssignments")
+  managedAssignments  JobAssignment[]         @relation("AssignmentManager")
+  workflowInstances   WorkflowInstance[]
+  user                User?
+}
+
+model EmployeeIdentityPrivate {
+  employeeId        String   @id
+  idType            String?
+  idNumberEncrypted String?
+  addressEncrypted  String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  employee EmployeeMaster @relation(fields: [employeeId], references: [id])
+}
+
+model EmploymentRelationship {
+  id                    String   @id @default(uuid())
+  employeeId            String
+  employmentType        String
+  legalEntity           String
+  contractType          String
+  startDate             DateTime
+  endDate               DateTime?
+  probationEndDate      DateTime?
+  terminationDate       DateTime?
+  terminationReasonCode String?
+
+  employee EmployeeMaster @relation(fields: [employeeId], references: [id])
+}
+
+model JobAssignment {
+  id                String   @id @default(uuid())
+  employeeId        String
+  positionId        String
+  orgUnitId         String
+  managerEmployeeId String?
+  assignmentType    String
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  isPrimary         Boolean  @default(true)
+
+  employee EmployeeMaster  @relation("EmployeeAssignments", fields: [employeeId], references: [id])
+  position Position        @relation(fields: [positionId], references: [id])
+  orgUnit  OrgUnit         @relation(fields: [orgUnitId], references: [id])
+  manager  EmployeeMaster? @relation("AssignmentManager", fields: [managerEmployeeId], references: [id])
+}
+
+model WorkflowTemplate {
+  id           String             @id @default(uuid())
+  templateCode String             @unique
+  templateName String
+  domainType   WorkflowDomainType
+  version      Int
+  isActive     Boolean            @default(true)
+
+  stages        WorkflowStage[]
+  taskTemplates WorkflowTaskTemplate[]
+  instances     WorkflowInstance[]
+}
+
+model WorkflowStage {
+  id         String @id @default(uuid())
+  templateId String
+  stageCode  String
+  stageName  String
+  stageOrder Int
+
+  template      WorkflowTemplate     @relation(fields: [templateId], references: [id])
+  taskTemplates WorkflowTaskTemplate[]
+}
+
+model WorkflowTaskTemplate {
+  id              String   @id @default(uuid())
+  templateId      String
+  stageId         String
+  taskCode        String
+  taskName        String
+  requiredRole    RoleCode
+  isRequired      Boolean  @default(true)
+  dependsOnTaskId String?
+
+  template WorkflowTemplate @relation(fields: [templateId], references: [id])
+  stage    WorkflowStage    @relation(fields: [stageId], references: [id])
+  tasks    WorkflowTask[]
+}
+
+model WorkflowInstance {
+  id                 String         @id @default(uuid())
+  templateId         String
+  employeeId         String
+  businessObjectType String
+  businessObjectId   String
+  status             WorkflowStatus
+  startedAt          DateTime       @default(now())
+  completedAt        DateTime?
+  initiatedBy        String
+
+  template WorkflowTemplate @relation(fields: [templateId], references: [id])
+  employee EmployeeMaster   @relation(fields: [employeeId], references: [id])
+  tasks    WorkflowTask[]
+  events   WorkflowEvent[]
+}
+
+model WorkflowTask {
+  id                 String         @id @default(uuid())
+  workflowInstanceId String
+  taskTemplateId     String
+  taskCode           String
+  status             WorkflowStatus
+  assigneeType       String
+  assigneeId         String
+  dueAt              DateTime?
+  startedAt          DateTime?
+  completedAt        DateTime?
+  resultSummary      String?
+
+  workflowInstance WorkflowInstance     @relation(fields: [workflowInstanceId], references: [id])
+  taskTemplate     WorkflowTaskTemplate @relation(fields: [taskTemplateId], references: [id])
+  artifacts        TaskArtifact[]
+}
+
+model TaskArtifact {
+  id                  String @id @default(uuid())
+  taskId              String
+  artifactType        String
+  artifactUri         String
+  artifactPayloadJson Json
+
+  task WorkflowTask @relation(fields: [taskId], references: [id])
+}
+
+model ActionDefinition {
+  id               String             @id @default(uuid())
+  actionCode       String             @unique
+  actionName       String
+  domainType       WorkflowDomainType
+  inputSchemaJson  Json
+  outputSchemaJson Json
+  requiresApproval Boolean            @default(false)
+  isIdempotent     Boolean            @default(true)
+
+  invocations ActionInvocation[]
+}
+
+model ActionInvocation {
+  id                 String                 @id @default(uuid())
+  actionDefinitionId String
+  requestId          String                 @unique
+  idempotencyKey     String                 @unique
+  actorType          String
+  actorId            String
+  channel            String
+  inputPayloadJson   Json
+  status             ActionInvocationStatus
+  startedAt          DateTime               @default(now())
+  finishedAt         DateTime?
+  commandName        String?
+  rawCommand         String?
+  argsJson           Json?
+  traceId            String?
+  clientVersion      String?
+  runtimeEnv         String?
+  hostname           String?
+  operatorIp         String?
+  isDryRun           Boolean                @default(false)
+  isInteractive      Boolean                @default(false)
+  outputFormat       String?
+  riskLevel          RiskLevel?
+  requiresApproval   Boolean                @default(false)
+  blockingReason     String?
+
+  actionDefinition ActionDefinition @relation(fields: [actionDefinitionId], references: [id])
+  result           ActionResult?
+  approvals        ApprovalRequest[]
+  securityEvents   SecurityEvent[]
+  compensations    CompensationAction[] @relation("SourceInvocationCompensations")
+  workflowEvents   WorkflowEvent[]
+  auditEvents      AuditEvent[]
+}
+
+model ActionResult {
+  id                 String  @id @default(uuid())
+  invocationId       String  @unique
+  success            Boolean
+  businessObjectType String
+  businessObjectId   String
+  outputPayloadJson  Json
+  errorCode          String?
+  errorMessage       String?
+  completedAt        DateTime @default(now())
+  resultSummary      String?
+  errorStack         String?
+
+  invocation ActionInvocation @relation(fields: [invocationId], references: [id])
+}
+
+model ApprovalRequest {
+  id             String         @id @default(uuid())
+  invocationId   String
+  approverRole   RoleCode
+  approverId     String
+  approvalStatus ApprovalStatus
+  decisionAt     DateTime?
+  decisionReason String?
+  approvalType   String?
+  requestedAt    DateTime       @default(now())
+
+  invocation ActionInvocation @relation(fields: [invocationId], references: [id])
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid())
+  eventTime    DateTime @default(now())
+  actorType    String
+  actorId      String
+  entityType   String
+  entityId     String
+  operation    String
+  beforeJson   Json?
+  afterJson    Json?
+  reason       String?
+  requestId    String?
+  channel      String?
+  invocationId String?
+  traceId      String?
+
+  invocation   ActionInvocation? @relation(fields: [invocationId], references: [id])
+}
+
+model WorkflowEvent {
+  id                 String   @id @default(uuid())
+  workflowInstanceId String
+  taskId             String?
+  eventType          String
+  eventPayloadJson   Json
+  occurredAt         DateTime @default(now())
+  invocationId       String?
+  requestId          String?
+  traceId            String?
+
+  workflowInstance WorkflowInstance @relation(fields: [workflowInstanceId], references: [id])
+  invocation       ActionInvocation? @relation(fields: [invocationId], references: [id])
+}
+
+model SecurityEvent {
+  id               String                   @id @default(uuid())
+  invocationId     String
+  actorId          String
+  eventType        SecurityEventType
+  targetResource   String
+  riskLevel        RiskLevel
+  detailsJson      Json
+  occurredAt       DateTime                 @default(now())
+  resolvedAt       DateTime?
+  resolutionStatus SecurityResolutionStatus @default(OPEN)
+
+  invocation       ActionInvocation         @relation(fields: [invocationId], references: [id])
+}
+
+model CompensationAction {
+  id                     String             @id @default(uuid())
+  sourceInvocationId     String
+  compensatingActionCode String
+  payloadJson            Json
+  status                 CompensationStatus
+  executedAt             DateTime?
+  resultJson             Json?
+
+  sourceInvocation       ActionInvocation   @relation("SourceInvocationCompensations", fields: [sourceInvocationId], references: [id])
+}

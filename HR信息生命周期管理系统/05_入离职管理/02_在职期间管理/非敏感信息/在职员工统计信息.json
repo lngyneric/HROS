@@ -1,0 +1,18 @@
+{
+  "lastUpdated": "2026-02-28T03:36:21.646Z",
+  "totalEmployees": 472,
+  "departmentDistribution": {
+    "未知": 472
+  },
+  "positionDistribution": {
+    "未知": 472
+  },
+  "locationDistribution": {
+    "未知": 472
+  },
+  "genderDistribution": {
+    "male": 0,
+    "female": 0,
+    "unknown": 472
+  }
+}
