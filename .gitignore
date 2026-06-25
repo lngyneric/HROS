@@ -11,3 +11,4 @@ coverage
 *.sqlite3
 *.tsbuildinfo
 .tmp_*
+.npm-cache/
