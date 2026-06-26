@@ -1,5 +1,11 @@
 # HROS Backend（AI Native 入离职底座）
 
+## 本地运行入口
+
+优先从仓库根目录的 `README.md` 开始。根文档提供了当前 MVP 的最短启动路径、测试账号和一键开发启动命令。
+
+当前本地开发与验证以 **PostgreSQL** 为唯一支持路径。仓库根目录的 `dev:db` 已切换为 `docker compose up -d db`，不再使用旧的 sqlite 提示语义。
+
 ## 本地运行（PostgreSQL）
 
 在仓库根目录执行。

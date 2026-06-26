@@ -6,10 +6,10 @@
     "apps/frontend"
   ],
   "scripts": {
-    "dev:db": "node -e \"console.log('sqlite mode: no db container needed')\"",
+    "dev:db": "docker compose up -d db",
     "dev:backend": "npm -w apps/backend run dev",
-    "dev:frontend": "npm -w apps/frontend run dev",
-    "dev": "npm run dev:db && npm run dev:backend",
+    "dev:frontend": "npm -w apps/frontend run dev -- --host 0.0.0.0 --port 5173",
+    "dev": "bash ./scripts/dev.sh",
     "test:backend": "npm -w apps/backend test"
   }
 }

@@ -5,6 +5,7 @@ async function main() {
   const passwordHash = await hashPassword("password12345");
   await prisma.workflowEvent.deleteMany();
   await prisma.auditEvent.deleteMany();
+  await prisma.securityEvent.deleteMany();
   await prisma.approvalRequest.deleteMany();
   await prisma.actionResult.deleteMany();
   await prisma.actionInvocation.deleteMany();
